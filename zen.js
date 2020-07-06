@@ -39,8 +39,6 @@ async function api(url, protocol = {}, baseUrl = "api") {
     return result;
 }
 
-const cache = {};
-
 function inlineHTML(html, protocol = {}) {
     const temporal = document.createElement("div");
 
@@ -56,7 +54,7 @@ function inlineHTML(html, protocol = {}) {
         <template>
             ${html}
             <script>
-                console.log("hi");
+                (() => {})()
             </script>
         </template>
     `;
@@ -110,11 +108,13 @@ function inlineHTML(html, protocol = {}) {
 }
 
 async function loadComponent(url, protocol = {}) {
-    let html = cache[url];
+    window._cache = window._cache || {};
 
-    if (!cache[url]) {
+    let html = window._cache[url];
+
+    if (!window._cache[url]) {
         html = await get(url);
-        cache[url] = html;
+        window._cache[url] = html;
     }
 
     const parent = inlineHTML(html, protocol);

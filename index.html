@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen.js Micro Library</title>
+
+    <script src="https://cdn.jsdelivr.net/remarkable/1.7.1/remarkable.min.js"></script>
+
+    <link rel="stylesheet" href="prism.css">
+    <script src="prism.js"></script>
+
+    <script src="zen.js"></script>
+
+    <script>
+        const fncode = fun => {
+            const code = fun.toString();
+            const indent = code.match(/\n(\s+)}$/)[1];
+            const fixcode = code.replace(new RegExp(indent, "g"), "");
+            return `\`\`\`javascript\n${fixcode}\n\`\`\``;
+        };
+
+        const fncodeMD = fun => {
+            const md = new Remarkable();
+            return md.render(fncode(fun));
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Zen.js - Micro Library</h1>
+
+    <div>
+        <h2>await get(url, body)</h2>
+        <div>
+            <script>
+                (parent => {
+                    async function test() {
+                        const url = "https://randomuser.me/api";
+                        const params = { results: 4 };
+                        const result = await get(url, params).catch(() => null);
+                        alert(JSON.stringify(result));
+                    };
+
+                    parent.innerHTML = fncodeMD(test);
+
+                    const button = inlineHTML("<button>test</button>");
+
+                    button.onclick = () => test();
+
+                    parent.append(button);
+                })(document.currentScript.parentElement);
+            </script>
+        </div>
+    </div>
+    
+    <div>
+        <h2>await post(url, body)</h2>
+        <div>
+            <script>
+                (parent => {
+                    async function test() {
+                        const url = "https://5b44b71093fb1d07b9f038b979f48bd1.m.pipedream.net";
+                        const body = { message: "hello" };
+                        const result = await post(url, body).catch(() => null);
+                        alert(JSON.stringify(result));
+                    };
+
+                    parent.innerHTML = fncodeMD(test);
+
+                    const button = inlineHTML("<button>test</button>");
+
+                    button.onclick = () => test();
+
+                    parent.append(button);
+                })(document.currentScript.parentElement);
+            </script>
+        </div>
+    </div>
+</body>
+
+</html>
