@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.2 (alpha) July 2020
+// Kuhni Labs - zen.js v1.4 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -53,6 +53,21 @@ async function post(url, body = {}) {
         method: "post",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body || {})
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+    }
+
+    return await response.json();
+}
+
+async function postForm(url, formData) {
+    const response = await fetch(url, {
+        method: "post",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: formData
     });
 
     if (!response.ok) {
@@ -120,7 +135,7 @@ function inlineHTML(html, protocol = {}) {
                     selectId,
                 ) => {
                     try {
-                        await ${(script.textContent).replace(/document\.currentScript\.parentElement/g, "parent")};
+                        await ${(script.textContent || "(() => null)()").replace(/document\.currentScript\.parentElement/g, "parent")};
                     } catch (error) {
                         console.warn("Error on script", \`\${error}\`);
                         console.warn(":>", \`${script.textContent.replace(/\`/g, "~")}\`);
@@ -263,6 +278,8 @@ function renderContext(root, context, inc, dec) {
                 if (event.target.checked) return;
                 context.event = event;
                 context.self = node;
+                context.root = root;
+                context.context = context;
                 try {
                     new Function(
                         ...Object.keys(context),
@@ -284,6 +301,8 @@ function renderContext(root, context, inc, dec) {
                 if (!event.target.checked) return;
                 context.event = event;
                 context.self = node;
+                context.root = root;
+                context.context = context;
                 try {
                     new Function(
                         ...Object.keys(context),
@@ -297,12 +316,35 @@ function renderContext(root, context, inc, dec) {
             };
             node.addEventListener("change", node._bindCheck);
         }
+        if (node.attributes[":submit"]) {
+            console.log(":submit", node.attributes[":submit"].value, context);
+            if (node._bindSubmit) node.removeEventListener("submit", node._bindSubmit);
+            node._bindSubmit = event => {
+                context.event = event;
+                context.self = node;
+                context.root = root;
+                context.context = context;
+                try {
+                    new Function(
+                        ...Object.keys(context),
+                        `return (${node.attributes[":submit"].value});`
+                    )(
+                        ...Object.values(context)
+                    );
+                } catch (error) {
+                    console.warn(":error", `${error}`);
+                }
+            };
+            node.addEventListener("submit", node._bindSubmit);
+        }
         if (node.attributes[":change"]) {
             console.log(":change", node.attributes[":change"].value, context);
             if (node._bindChange) node.removeEventListener("change", node._bindChange);
             node._bindChange = event => {
                 context.event = event;
                 context.self = node;
+                context.root = root;
+                context.context = context;
                 try {
                     new Function(
                         ...Object.keys(context),
@@ -322,6 +364,8 @@ function renderContext(root, context, inc, dec) {
             node._bindKeydown = event => {
                 context.event = event;
                 context.self = node;
+                context.root = root;
+                context.context = context;
                 try {
                     new Function(
                         ...Object.keys(context),
@@ -341,6 +385,8 @@ function renderContext(root, context, inc, dec) {
             node._bindClick = event => {
                 context.event = event;
                 context.self = node;
+                context.root = root;
+                context.context = context;
                 try {
                     new Function(
                         ...Object.keys(context),
@@ -358,6 +404,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":checked", node.attributes[":checked"].value, context);
             (async () => {
                 inc();
+                context = { ...context, context };
                 try {
                     const result = await new Function(
                         ...Object.keys(context),
@@ -379,6 +426,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":href", node.attributes[":href"].value, context);
             (async () => {
                 inc();
+                context = { ...context, context };
                 try {
                     const result = await new Function(
                         ...Object.keys(context),
@@ -400,6 +448,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":id", node.attributes[":id"].value, context);
             (async () => {
                 inc();
+                context = { ...context, context };
                 try {
                     const result = await new Function(
                         ...Object.keys(context),
@@ -421,6 +470,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":disabled", node.attributes[":disabled"].value, context);
             (async () => {
                 inc();
+                context = { ...context, context };
                 try {
                     const result = await new Function(
                         ...Object.keys(context),
@@ -442,6 +492,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":target", node.attributes[":target"].value, context);
             (async () => {
                 inc();
+                context = { ...context, context };
                 try {
                     const result = await new Function(
                         ...Object.keys(context),
@@ -463,6 +514,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":name", node.attributes[":name"].value, context);
             (async () => {
                 inc();
+                context = { ...context, context };
                 try {
                     const result = await new Function(
                         ...Object.keys(context),
@@ -484,6 +536,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":value", node.attributes[":value"].value, context);
             (async () => {
                 inc();
+                context = { ...context, context };
                 try {
                     const result = await new Function(
                         ...Object.keys(context),
