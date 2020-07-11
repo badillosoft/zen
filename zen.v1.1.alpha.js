@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.2 (alpha) July 2020
+// Kuhni Labs - zen.js v1.1 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -12,39 +12,6 @@ async function get(url, params = {}) {
     }
 
     return await response.text();
-}
-
-async function getLocal(url, params = {}) {
-    return await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        xhr.open('GET', `file:///android_asset/www${url}`);
-
-        xhr.onload = async () => {
-            if (xhr.status == 200) {
-                resolve(xhr.response);
-            }
-            const html = await get(url).catch(error => reject(error));
-
-            resolve(html);
-        };
-
-        xhr.send();
-    });
-    // const query = Object.entries(params || {}).map(([key, value]) => `${key}=${value}`).join("&");
-
-    // console.log(cordovaFetch, url);
-
-    // const response = await fetch(`file:///android_asset/www${url}`);
-
-    // console.log(response);
-
-    // // if (!response.ok) {
-    // //     const error = await response.text();
-    // //     throw new Error(error);
-    // // }
-
-    // return await response.text();
 }
 
 async function post(url, body = {}) {
@@ -71,8 +38,6 @@ async function api(url, protocol = {}, baseUrl = "api") {
 
     return result;
 }
-
-const cache = {};
 
 function inlineHTML(html, protocol = {}) {
     const temporal = document.createElement("div");
@@ -143,11 +108,13 @@ function inlineHTML(html, protocol = {}) {
 }
 
 async function loadComponent(url, protocol = {}) {
-    let html = cache[url];
+    window._cache = window._cache || {};
 
-    if (!cache[url]) {
-        html = await getLocal(url);
-        cache[url] = html;
+    let html = window._cache[url];
+
+    if (!window._cache[url]) {
+        html = await get(url);
+        window._cache[url] = html;
     }
 
     const parent = inlineHTML(html, protocol);
@@ -208,7 +175,7 @@ function selectorAll(node, query) {
 }
 
 function clear(node) {
-    while (node.firstChild) node.removeChild(node.firstChild);
+    while (node.firstElementChild) node.removeChild(firstElementChild);
 }
 
 function select(query) {
@@ -230,11 +197,6 @@ function selectId(id) {
 function renderContext(root, context, inc, dec) {
     if (root._processed) return;
 
-    context = {
-        ...window._context,
-        ...context
-    };
-
     for (let element of selectorAll(root, `[data-for]`)) {
         if (element.dataset.for) {
             element.remove();
@@ -250,92 +212,10 @@ function renderContext(root, context, inc, dec) {
     for (let node of selectorAll(root, "*")) {
         if (node._processed) continue;
         node._processed = true;
-        if (node.attributes[":uncheck"]) {
-            console.log(":uncheck", node.attributes[":uncheck"].value, context);
-            if (node._bindUncheck) node.removeEventListener("change", node._bindUncheck);
-            node._bindUncheck = event => {
-                console.log("UNCHECK", event.target);
-                if (event.target.checked) return;
-                context.event = event;
-                context.self = node;
-                try {
-                    new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":uncheck"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-            };
-            node.addEventListener("change", node._bindUncheck);
-        }
-        if (node.attributes[":check"]) {
-            console.log(":check", node.attributes[":check"].value, context);
-            if (node._bindCheck) node.removeEventListener("change", node._bindCheck);
-            node._bindCheck = event => {
-                console.log("CHECK", event.target);
-                if (!event.target.checked) return;
-                context.event = event;
-                context.self = node;
-                try {
-                    new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":check"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-            };
-            node.addEventListener("change", node._bindCheck);
-        }
-        if (node.attributes[":change"]) {
-            console.log(":change", node.attributes[":change"].value, context);
-            if (node._bindChange) node.removeEventListener("change", node._bindChange);
-            node._bindChange = event => {
-                context.event = event;
-                context.self = node;
-                try {
-                    new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":change"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-            };
-            node.addEventListener("change", node._bindChange);
-        }
-        if (node.attributes[":keydown"]) {
-            console.log(":keydown", node.attributes[":keydown"].value, context);
-            if (node._bindKeydown) node.removeEventListener("keydown", node._bindKeydown);
-            node._bindKeydown = event => {
-                context.event = event;
-                context.self = node;
-                try {
-                    new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":keydown"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-            };
-            node.addEventListener("keydown", node._bindKeydown);
-        }
         if (node.attributes[":click"]) {
             console.log(":click", node.attributes[":click"].value, context);
-            if (node._bindClick) node.removeEventListener("click", node._bindClick);
-            node._bindClick = event => {
+            node.addEventListener("click", event => {
                 context.event = event;
-                context.self = node;
                 try {
                     new Function(
                         ...Object.keys(context),
@@ -346,134 +226,7 @@ function renderContext(root, context, inc, dec) {
                 } catch (error) {
                     console.warn(":error", `${error}`);
                 }
-            };
-            node.addEventListener("click", node._bindClick);
-        }
-        if (node.attributes[":checked"]) {
-            console.log(":checked", node.attributes[":checked"].value, context);
-            (async () => {
-                inc();
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":checked"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(":checked result", result);
-                    node.checked = !!result;
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
-        }
-        if (node.attributes[":href"]) {
-            console.log(":href", node.attributes[":href"].value, context);
-            (async () => {
-                inc();
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":href"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(":href result", result);
-                    node.href = result;
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
-        }
-        if (node.attributes[":id"]) {
-            console.log(":id", node.attributes[":id"].value, context);
-            (async () => {
-                inc();
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":id"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(":id result", result);
-                    node.id = result;
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
-        }
-        if (node.attributes[":disabled"]) {
-            console.log(":disabled", node.attributes[":disabled"].value, context);
-            (async () => {
-                inc();
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":disabled"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(":disabled result", result);
-                    node.disabled = !!result;
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
-        }
-        if (node.attributes[":target"]) {
-            console.log(":target", node.attributes[":target"].value, context);
-            (async () => {
-                inc();
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":target"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(":target result", result);
-                    node.htmlFor = result;
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
-        }
-        if (node.attributes[":name"]) {
-            console.log(":name", node.attributes[":name"].value, context);
-            (async () => {
-                inc();
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":name"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(":name result", result);
-                    node.name = result;
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
+            });
         }
         if (node.attributes[":value"]) {
             console.log(":value", node.attributes[":value"].value, context);
@@ -539,17 +292,13 @@ function renderContext(root, context, inc, dec) {
             (async () => {
                 inc();
 
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${node.attributes[":class"].value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    node.className = `${node._defaultClassName} ${result || ""}`;
-                } catch (error) {
-                    console.warn(":error", `${error}`);
-                }
+                const result = await new Function(
+                    ...Object.keys(context),
+                    `return (${node.attributes[":class"].value});`
+                )(
+                    ...Object.values(context)
+                );
+                node.className = `${node._defaultClassName} ${result || ""}`;
 
                 // node.removeAttribute(":class");
 
@@ -584,10 +333,9 @@ function renderContext(root, context, inc, dec) {
                 child._processed = true;
             }
             node.hidden = true;
-            // node._flex = node._flex || node.classList.contains("d-flex");
-            // node.classList.remove("d-block");
-            // node.classList.remove("d-flex");
-            // node.classList.add("d-none");
+            node._flex = node._flex || node.classList.contains("d-flex");
+            node.classList.remove("d-flex");
+            node.classList.add("d-none");
             (async () => {
                 inc();
                 let result = null;
@@ -606,10 +354,8 @@ function renderContext(root, context, inc, dec) {
                 console.log(":if result", result);
 
                 if (result) {
-                    // node.classList.remove("d-none");
-                    // if (node._flex) node.classList.add("d-flex");
-                    // else node.classList.add("d-block")
-                    node.hidden = false;
+                    node.classList.remove("d-none");
+                    if (node._flex) node.classList.add("d-flex");
                     node._processed = false;
                     for (let child of selectorAll(node, "*")) {
                         child._processed = false;
@@ -703,23 +449,16 @@ function renderContext(root, context, inc, dec) {
 }
 
 async function getContext() {
-    window._context = {
-        ...window._context,
-        ...JSON.parse(localStorage.getItem("context") || "{}"),
-    };
     return window._context;
 }
 
-async function setContext(context = {}) {
+async function setContext(context) {
     window._context = window._context || {};
 
     window._context = {
-        ...JSON.parse(localStorage.getItem("context") || "{}"),
         ...window._context,
         ...context
     };
-
-    localStorage.setItem("context", JSON.stringify(window._context));
 
     let pic = 0;
 
@@ -732,16 +471,9 @@ async function setContext(context = {}) {
         () => --pic,
     );
 
-    let iter = 0;
-
-    while (iter <= 1000 && pic > 0) {
+    while (pic > 0) {
         console.warn("pic", pic);
         await new Promise(resolve => setTimeout(resolve, 20));
-        ++iter;
-    }
-
-    if (iter >= 1000) {
-        throw new Error("Set context error");
     }
 
     console.warn("pic", pic);
@@ -750,26 +482,4 @@ async function setContext(context = {}) {
 function handle(key, callback) {
     window._context = window._context || {};
     window._context[key] = callback;
-}
-
-function dispatcher(node, name, payload) {
-    node.dispatchEvent(new CustomEvent(name, { detail: payload }));
-}
-
-function listener(node, name, callback) {
-    const handler = event => {
-        callback(event.detail || event, event);
-    };
-    node.addEventListener(name, handler);
-    return () => {
-        node.removeEventListener(name, handler);
-    };
-}
-
-function dispatch(name, payload) {
-    dispatcher(document, name, payload);
-}
-
-function listen(name, payload) {
-    return listener(document, name, payload);
 }
