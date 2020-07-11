@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.6 (alpha) July 2020
+// Kuhni Labs - zen.js v1.6.1 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -283,7 +283,7 @@ function renderContext(root, context, inc, dec) {
         for (let attribute of [...node.attributes]) {
             if (attribute.name.match(/^@.+/)) {
                 const name = attribute.name.match(/^@(.+)/)[1];
-                console.log(`@${name}`, attribute.value, context);
+                console.log(`zen.js :evt @${name}`, attribute.value, context);
                 if (node[`_@${name}`]) node.removeEventListener(name, node[`_@${name}`]);
                 node[`_@${name}`] = event => {
                     context = { 
@@ -306,16 +306,16 @@ function renderContext(root, context, inc, dec) {
                             ...Object.values(context)
                         );
                     } catch (error) {
-                        console.warn(":error", `${error}`);
+                        console.warn("zen.js :error", `${error}`);
                     }
                 };
                 node.addEventListener(name, node[`_@${name}`]);
             }
         }
         for (let attribute of [...node.attributes]) {
-            if (attribute.name.match(/^#.+/)) {
-                const name = attribute.name.match(/^#(.+)/)[1];
-                console.log(`#${name}`, attribute.value, context);
+            if (attribute.name.match(/^\^.+/)) {
+                const name = attribute.name.match(/^\^(.+)/)[1];
+                console.log(`zen.js :cap ^${name}`, attribute.value, context);
                 (async () => {
                     inc();
                     context = { 
@@ -336,10 +336,10 @@ function renderContext(root, context, inc, dec) {
                         )(
                             ...Object.values(context)
                         );
-                        console.log("#${name} result", result);
+                        console.log(`zen.js :result ^${name}`, result);
                         node[name] = result;
                     } catch (error) {
-                        console.warn(":error", `${error}`);
+                        console.warn("zen.js :error", `${error}`);
                     }
                     // node.removeAttribute(":value");
 
