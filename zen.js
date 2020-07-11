@@ -8,6 +8,7 @@ async function get(url, params = {}) {
 
     if (!response.ok) {
         const error = await response.text();
+        console.log("get error", error);
         throw new Error(error);
     }
 
@@ -143,12 +144,16 @@ function inlineHTML(html, protocol = {}) {
 }
 
 async function loadComponent(url, protocol = {}) {
-    let html = cache[url];
+    // let html = cache[url];
 
-    if (!cache[url]) {
-        html = await get(url);
-        cache[url] = html;
-    }
+    // if (!cache[url]) {
+    //     html = await get(url);
+    //     cache[url] = html;
+    // }
+
+    const html = await get(url);
+
+    console.log("html", html);
 
     const parent = inlineHTML(html, protocol);
 
