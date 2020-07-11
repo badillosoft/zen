@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.4 (alpha) July 2020
+// Kuhni Labs - zen.js v1.4.2 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -63,11 +63,11 @@ async function post(url, body = {}) {
     return await response.json();
 }
 
-async function postForm(url, formData) {
+async function postForm(url, form) {
     const response = await fetch(url, {
         method: "post",
         headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: formData
+        body: new FormData(form)
     });
 
     if (!response.ok) {
