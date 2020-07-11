@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.6.2 (alpha) July 2020
+// Kuhni Labs - zen.js v1.6.3 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -314,7 +314,7 @@ function renderContext(root, context, inc, dec) {
         }
         for (let attribute of [...node.attributes]) {
             if (attribute.name.match(/^\^.+/)) {
-                const name = attribute.name.match(/^\^(.+)/)[1];
+                const name = attribute.name.match(/^\^(.+)/)[1].replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
                 console.log(`zen.js :cap ^${name}`, attribute.value, context);
                 (async () => {
                     inc();
