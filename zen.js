@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.4.4 (alpha) July 2020
+// Kuhni Labs - zen.js v1.5 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -349,8 +349,8 @@ function renderContext(root, context, inc, dec) {
             };
             node.addEventListener("submit", node._bindSubmit);
         }
-        if (node.attributes[":change"]) {
-            console.log(":change", node.attributes[":change"].value, context);
+        if (node.attributes["@change"]) {
+            console.log("@change", node.attributes["@change"].value, context);
             if (node._bindChange) node.removeEventListener("change", node._bindChange);
             node._bindChange = event => {
                 context.event = event;
@@ -360,7 +360,7 @@ function renderContext(root, context, inc, dec) {
                 try {
                     new Function(
                         ...Object.keys(context),
-                        `return (${node.attributes[":change"].value});`
+                        `return (${node.attributes["@change"].value});`
                     )(
                         ...Object.values(context)
                     );
