@@ -146,7 +146,7 @@ async function loadComponent(url, protocol = {}) {
     let html = cache[url];
 
     if (!cache[url]) {
-        html = await getLocal(url);
+        html = await get(url);
         cache[url] = html;
     }
 
