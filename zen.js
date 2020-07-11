@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.5 (alpha) July 2020
+// Kuhni Labs - zen.js v1.6 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -280,6 +280,73 @@ function renderContext(root, context, inc, dec) {
     for (let node of selectorAll(root, "*")) {
         if (node._processed) continue;
         node._processed = true;
+        for (let attribute of [...node.attributes]) {
+            if (attribute.name.match(/^@.+/)) {
+                const name = attribute.name.match(/^@(.+)/)[1];
+                console.log(`@${name}`, attribute.value, context);
+                if (node[`_@${name}`]) node.removeEventListener(name, node[`_@${name}`]);
+                node[`_@${name}`] = event => {
+                    context = { 
+                        ...context, 
+                        context,
+                        self: node,
+                        root,
+                        node,
+                        parent: node.parent,
+                        parentElement: node.parentElement,
+                        event,
+                        eventName: name,
+                        attribute
+                    };
+                    try {
+                        new Function(
+                            ...Object.keys(context),
+                            `return (${attribute.value});`
+                        )(
+                            ...Object.values(context)
+                        );
+                    } catch (error) {
+                        console.warn(":error", `${error}`);
+                    }
+                };
+                node.addEventListener(name, node[`_@${name}`]);
+            }
+        }
+        for (let attribute of [...node.attributes]) {
+            if (attribute.name.match(/^#.+/)) {
+                const name = attribute.name.match(/^#(.+)/)[1];
+                console.log(`#${name}`, attribute.value, context);
+                (async () => {
+                    inc();
+                    context = { 
+                        ...context, 
+                        context,
+                        self: node,
+                        root,
+                        node,
+                        parent: node.parent,
+                        parentElement: node.parentElement,
+                        attribute,
+                        attributeName: name,
+                    };
+                    try {
+                        const result = await new Function(
+                            ...Object.keys(context),
+                            `return (${attribute.value});`
+                        )(
+                            ...Object.values(context)
+                        );
+                        console.log("#${name} result", result);
+                        node[name] = result;
+                    } catch (error) {
+                        console.warn(":error", `${error}`);
+                    }
+                    // node.removeAttribute(":value");
+
+                    dec();
+                })();
+            }
+        }
         if (node.attributes[":uncheck"]) {
             console.log(":uncheck", node.attributes[":uncheck"].value, context);
             if (node._bindUncheck) node.removeEventListener("change", node._bindUncheck);
@@ -349,8 +416,8 @@ function renderContext(root, context, inc, dec) {
             };
             node.addEventListener("submit", node._bindSubmit);
         }
-        if (node.attributes["@change"]) {
-            console.log("@change", node.attributes["@change"].value, context);
+        if (node.attributes[":change"]) {
+            console.log(":change", node.attributes[":change"].value, context);
             if (node._bindChange) node.removeEventListener("change", node._bindChange);
             node._bindChange = event => {
                 context.event = event;
@@ -360,7 +427,7 @@ function renderContext(root, context, inc, dec) {
                 try {
                     new Function(
                         ...Object.keys(context),
-                        `return (${node.attributes["@change"].value});`
+                        `return (${node.attributes[":change"].value});`
                     )(
                         ...Object.values(context)
                     );
