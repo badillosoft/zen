@@ -320,6 +320,7 @@ function renderContext(root, context, inc, dec) {
             console.log(":submit", node.attributes[":submit"].value, context);
             if (node._bindSubmit) node.removeEventListener("submit", node._bindSubmit);
             node._bindSubmit = event => {
+                event.preventDefault();
                 context.event = event;
                 context.self = node;
                 context.root = root;
