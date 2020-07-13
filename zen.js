@@ -280,13 +280,46 @@ function selectId(id) {
     return selector(document, `#${id}`);
 }
 
+async function execNode(node, type, name, attribute, context, inc, dec) {
+    inc();
+    if (name === "text") name = "textContent";
+    if (name === "html") name = "innerHTML";
+    context = {
+        ...context,
+        context,
+        self: node,
+        // root,
+        node,
+        parent: node.parent,
+        parentElement: node.parentElement,
+        attribute,
+        attributeName: name,
+    };
+    try {
+        const result = await new Function(
+            ...Object.keys(context),
+            `return (${attribute.value});`
+        )(
+            ...Object.values(context)
+        );
+        console.log(`zen.js :result ${type}${name}`, result);
+        if (type === "$") node[name] = result;
+        if (type === "^") node.parentElement[name] = result;
+    } catch (error) {
+        console.warn(`zen.js :error ${type}${name}`, `${error}`);
+    }
+    // node.removeAttribute(":value");
+
+    dec();
+}
+
 function procNode(node, context, inc, dec) {
     for (let attribute of [...node.attributes]) {
         if (attribute.name.match(/^@.+/)) {
             const name = attribute.name.match(/^@(.+)/)[1].replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
             console.log(`zen.js :evt @${name}`, attribute.value, context);
             if (node[`_@${name}`]) node.removeEventListener(name, node[`_@${name}`]);
-            node[`_@${name}`] = event => {
+            node[`_@${name}`] = async event => {
                 context = {
                     ...context,
                     context,
@@ -297,8 +330,17 @@ function procNode(node, context, inc, dec) {
                     parentElement: node.parentElement,
                     event,
                     eventName: name,
-                    attribute
+                    attribute,
+                    isCancel: false,
+                    cancel() {
+                        this.isCancel = true;
+                    }
                 };
+
+                if (node[`_@${name}/handler`]) await node[`_@${name}/handler`](context);
+
+                if (context.isCancel) return;
+
                 try {
                     new Function(
                         ...Object.keys(context),
@@ -310,83 +352,43 @@ function procNode(node, context, inc, dec) {
                     console.warn(`zen.js :error @${name}`, `${error}`);
                 }
             };
-            node.addEventListener(name, node[`_@${name}`]);
+
+            let eventName = name;
+
+            if (name === "form") {
+                node[`_@${name}/handler`] = async context => {
+                    context.event.preventDefault();
+                }
+                eventName = "submit";   
+            }
+
+            if (!eventName) continue;
+
+            node.addEventListener(eventName, node[`_@${name}`]);
         }
     }
     for (let attribute of [...node.attributes]) {
-        if (attribute.name.match(/^\$.+/)) {
-            let name = attribute.name.match(/^\$(.+)/)[1].replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
-            if (name === "text") name = "textContent";
-            if (name === "html") name = "innerHTML";
-            console.log(`zen.js :cap $${name}`, attribute.value, context);
-            (async () => {
-                inc();
-                context = {
-                    ...context,
-                    context,
-                    self: node,
-                    // root,
-                    node,
-                    parent: node.parent,
-                    parentElement: node.parentElement,
-                    attribute,
-                    attributeName: name,
-                };
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${attribute.value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(`zen.js :result $${name}`, result);
-                    node[name] = result;
-                } catch (error) {
-                    console.warn(`zen.js :error $${name}`, `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
+        if (attribute.name.match(/^[\$\^].+/)) {
+            const [type, key] = attribute.name.match(/^([\$\^])(.+)/).slice(1);
+            const name = key.replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
+            console.log(`zen.js :proc ${type}${name}`, attribute.value, context);
+            execNode(node, type, name, attribute, context, inc, dec);
         }
     }
-    for (let attribute of [...node.attributes]) {
-        if (attribute.name.match(/^\^.+/)) {
-            let name = attribute.name.match(/^\^(.+)/)[1].replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
-            if (name === "text") name = "textContent";
-            if (name === "html") name = "innerHTML";
-            console.log(`zen.js :cap ^${name}`, attribute.value, context);
-            (async () => {
-                inc();
-                context = {
-                    ...context,
-                    context,
-                    self: node,
-                    // root,
-                    node,
-                    parent: node.parent,
-                    parentElement: node.parentElement,
-                    attribute,
-                    attributeName: name,
-                };
-                try {
-                    const result = await new Function(
-                        ...Object.keys(context),
-                        `return (${attribute.value});`
-                    )(
-                        ...Object.values(context)
-                    );
-                    console.log(`zen.js :result ^${name}`, result);
-                    node.parentElement[name] = result;
-                } catch (error) {
-                    console.warn(`zen.js :error ^${name}`, `${error}`);
-                }
-                // node.removeAttribute(":value");
-
-                dec();
-            })();
-        }
-    }
+    // for (let attribute of [...node.attributes]) {
+    //     if (attribute.name.match(/^\$.+/)) {
+    //         const name = attribute.name.match(/^\$(.+)/)[1].replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
+    //         console.log(`zen.js :proc $${name}`, attribute.value, context);
+    //         execNode(node, name, attribute, context, inc, dec);
+    //     }
+    // }
+    // for (let attribute of [...node.attributes]) {
+    //     if (attribute.name.match(/^\^.+/)) {
+    //         const name = attribute.name.match(/^\^(.+)/)[1].replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
+    //         console.log(`zen.js :proc ^${name}`, attribute.value, context);
+    //         execNode(node, name, attribute, context, inc, dec);
+    //     }
+    // }
 }
 
 function renderContext(root, context, inc, dec) {
