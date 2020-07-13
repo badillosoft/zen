@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.6.3 (alpha) July 2020
+// Kuhni Labs - zen.js v1.6.4 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -913,6 +913,7 @@ function handle(key, callback) {
 }
 
 function dispatcher(node, name, payload = {}) {
+    console.log("zen.js dispatcher", node, name, payload);
     node.dispatchEvent(new CustomEvent(name, { detail: payload }));
 }
 
