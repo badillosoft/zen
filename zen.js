@@ -958,11 +958,11 @@ async function startRouter() {
         }
         
         .fade-in {
-            animation: fade-in 600ms;
+            animation: fade-in 800ms;
         }
 
         .fade-out {
-            animation: fade-out 600ms;
+            animation: fade-out 800ms;
         }
 
         [hidden] {
