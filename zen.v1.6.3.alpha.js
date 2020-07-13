@@ -912,7 +912,7 @@ function handle(key, callback) {
     window._context[key] = callback;
 }
 
-function dispatcher(node, name, payload = {}) {
+function dispatcher(node, name, payload) {
     node.dispatchEvent(new CustomEvent(name, { detail: payload }));
 }
 
@@ -926,10 +926,10 @@ function listener(node, name, callback) {
     };
 }
 
-function dispatch(name, payload = {}) {
+function dispatch(name, payload) {
     dispatcher(document, name, payload);
 }
 
-function listen(name, callback) {
-    return listener(document, name, callback);
+function listen(name, payload) {
+    return listener(document, name, payload);
 }
