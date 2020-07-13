@@ -286,7 +286,6 @@ async function execNode(node, type, name, attribute, context, inc, dec) {
     if (name === "html") name = "innerHTML";
     context = {
         ...context,
-        context,
         self: node,
         // root,
         node,
@@ -297,9 +296,11 @@ async function execNode(node, type, name, attribute, context, inc, dec) {
     };
     try {
         const result = await new Function(
+            "context",
             ...Object.keys(context),
             `return (${attribute.value});`
         )(
+            context,
             ...Object.values(context)
         );
         console.log(`zen.js :result ${type}${name}`, result);
@@ -317,54 +318,77 @@ function procNode(node, context, inc, dec) {
     for (let attribute of [...node.attributes]) {
         if (attribute.name.match(/^@.+/)) {
             const name = attribute.name.match(/^@(.+)/)[1].replace(/-[a-z]/g, w => `${w.slice(1).toUpperCase()}${w.slice(2)}`);
-            console.log(`zen.js :evt @${name}`, attribute.value, context);
-            if (node[`_@${name}`]) node.removeEventListener(name, node[`_@${name}`]);
-            node[`_@${name}`] = async event => {
+            let eventName = name;
+            if (name === "form") {
+                eventName = "submit";
+                node[`_@${eventName}/handler`] = async context => {
+                    context.event.preventDefault();
+                    context.formData = getFormData(node);
+                }
+            }
+            if (!eventName) continue;
+            console.log(`zen.js :evt @${eventName}`, attribute.value, context);
+            if (node[`_@${eventName}`]) {
+                console.warn("!!! remove", eventName);
+                node.removeEventListener(name, node[`_@${eventName}`]);
+                console.log("remove", eventName);
+            }
+            console.warn("!!! add", eventName);
+            node.removeAttribute(attribute.name);
+            node[`_@${eventName}`] = async event => {
                 context = {
                     ...context,
-                    context,
                     self: node,
                     // root,
                     node,
                     parent: node.parent,
                     parentElement: node.parentElement,
                     event,
-                    eventName: name,
+                    name,
+                    eventName,
                     attribute,
                     isCancel: false,
                     cancel() {
                         this.isCancel = true;
+                    },
+                    formData: {},
+                    async formReset() {
+                        let target = node;
+                        if (target.tagName !== "FORM") {
+                            target = selector(target, "form");
+                            if (!target) {
+                                target = node;
+                                while (target !== document.body && target.tagName !== "FORM") target = target.parentElement;
+                            }
+                        }
+                        if (target.tagName !== "FORM") return;
+                        target.reset();
+                        const formData = getFormData(target);
+                        await setContext({
+                            formData
+                        });
                     }
                 };
 
-                if (node[`_@${name}/handler`]) await node[`_@${name}/handler`](context);
+                if (node[`_@${eventName}/handler`]) await node[`_@${eventName}/handler`](context);
 
                 if (context.isCancel) return;
 
                 try {
                     new Function(
+                        "context",
                         ...Object.keys(context),
                         `return (${attribute.value});`
                     )(
+                        context,
                         ...Object.values(context)
                     );
                 } catch (error) {
-                    console.warn(`zen.js :error @${name}`, `${error}`);
+                    console.warn(`zen.js :error @${eventName}`, `${error}`);
                 }
             };
 
-            let eventName = name;
-
-            if (name === "form") {
-                node[`_@${name}/handler`] = async context => {
-                    context.event.preventDefault();
-                }
-                eventName = "submit";   
-            }
-
-            if (!eventName) continue;
-
-            node.addEventListener(eventName, node[`_@${name}`]);
+            node.addEventListener(eventName, node[`_@${eventName}`]);
         }
     }
     for (let attribute of [...node.attributes]) {
@@ -422,10 +446,6 @@ function renderContext(root, context, inc, dec) {
                 child._processed = true;
             }
             node.hidden = true;
-            // node._flex = node._flex || node.classList.contains("d-flex");
-            // node.classList.remove("d-block");
-            // node.classList.remove("d-flex");
-            // node.classList.add("d-none");
             (async () => {
                 inc();
                 let result = null;
@@ -444,9 +464,6 @@ function renderContext(root, context, inc, dec) {
                 console.log(":if result", result);
 
                 if (result) {
-                    // node.classList.remove("d-none");
-                    // if (node._flex) node.classList.add("d-flex");
-                    // else node.classList.add("d-block")
                     node.hidden = false;
                     node._processed = false;
                     for (let child of selectorAll(node, "*")) {
@@ -490,12 +507,6 @@ function renderContext(root, context, inc, dec) {
 
                 console.log(":for items", items);
 
-                // for (let element of selectorAll(node.parentElement, `[data -for]`)) {
-                //     if (element.dataset.for) {
-                //         element.remove();
-                //     }
-                // }
-
                 let lastElement = node;
 
                 let index = 0;
@@ -512,8 +523,6 @@ function renderContext(root, context, inc, dec) {
 
                     lastElement = clone;
 
-                    // node.parentElement.append(clone);
-
                     renderContext(
                         clone,
                         {
@@ -528,386 +537,11 @@ function renderContext(root, context, inc, dec) {
 
                     ++index;
                 }
-
-                // $(".background").each(function () {
-                //     const imgpath = $(this).find('img');
-                //     $(this).css('background-image', 'url(' + imgpath.attr('src') + ')');
-                //     imgpath.hide();
-                // });
-
                 dec();
             })();
             continue;
         }
         procNode(node, context, inc, dec);
-        // if (node.attributes[":uncheck"]) {
-        //     console.log(":uncheck", node.attributes[":uncheck"].value, context);
-        //     if (node._bindUncheck) node.removeEventListener("change", node._bindUncheck);
-        //     node._bindUncheck = event => {
-        //         console.log("UNCHECK", event.target);
-        //         if (event.target.checked) return;
-        //         context.event = event;
-        //         context.self = node;
-        //         context.root = root;
-        //         context.context = context;
-        //         try {
-        //             new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":uncheck"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //     };
-        //     node.addEventListener("change", node._bindUncheck);
-        // }
-        // if (node.attributes[":check"]) {
-        //     console.log(":check", node.attributes[":check"].value, context);
-        //     if (node._bindCheck) node.removeEventListener("change", node._bindCheck);
-        //     node._bindCheck = event => {
-        //         console.log("CHECK", event.target);
-        //         if (!event.target.checked) return;
-        //         context.event = event;
-        //         context.self = node;
-        //         context.root = root;
-        //         context.context = context;
-        //         try {
-        //             new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":check"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //     };
-        //     node.addEventListener("change", node._bindCheck);
-        // }
-        // if (node.attributes[":submit"]) {
-        //     console.log(":submit", node.attributes[":submit"].value, context);
-        //     if (node._bindSubmit) node.removeEventListener("submit", node._bindSubmit);
-        //     node._bindSubmit = event => {
-        //         event.preventDefault();
-        //         context.event = event;
-        //         context.self = node;
-        //         context.root = root;
-        //         context.context = context;
-        //         context.formData = getFormData(node);
-        //         try {
-        //             new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":submit"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //     };
-        //     node.addEventListener("submit", node._bindSubmit);
-        // }
-        // if (node.attributes[":change"]) {
-        //     console.log(":change", node.attributes[":change"].value, context);
-        //     if (node._bindChange) node.removeEventListener("change", node._bindChange);
-        //     node._bindChange = event => {
-        //         context.event = event;
-        //         context.self = node;
-        //         context.root = root;
-        //         context.context = context;
-        //         try {
-        //             new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":change"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //     };
-        //     node.addEventListener("change", node._bindChange);
-        // }
-        // if (node.attributes[":keydown"]) {
-        //     console.log(":keydown", node.attributes[":keydown"].value, context);
-        //     if (node._bindKeydown) node.removeEventListener("keydown", node._bindKeydown);
-        //     node._bindKeydown = event => {
-        //         context.event = event;
-        //         context.self = node;
-        //         context.root = root;
-        //         context.context = context;
-        //         try {
-        //             new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":keydown"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //     };
-        //     node.addEventListener("keydown", node._bindKeydown);
-        // }
-        // if (node.attributes[":click"]) {
-        //     console.log(":click", node.attributes[":click"].value, context);
-        //     if (node._bindClick) node.removeEventListener("click", node._bindClick);
-        //     node._bindClick = event => {
-        //         context.event = event;
-        //         context.self = node;
-        //         context.root = root;
-        //         context.context = context;
-        //         try {
-        //             new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":click"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //     };
-        //     node.addEventListener("click", node._bindClick);
-        // }
-        // if (node.attributes[":checked"]) {
-        //     console.log(":checked", node.attributes[":checked"].value, context);
-        //     (async () => {
-        //         inc();
-        //         context = { ...context, context };
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":checked"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":checked result", result);
-        //             node.checked = !!result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //         // node.removeAttribute(":value");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":href"]) {
-        //     console.log(":href", node.attributes[":href"].value, context);
-        //     (async () => {
-        //         inc();
-        //         context = { ...context, context };
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":href"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":href result", result);
-        //             node.href = result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //         // node.removeAttribute(":value");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":id"]) {
-        //     console.log(":id", node.attributes[":id"].value, context);
-        //     (async () => {
-        //         inc();
-        //         context = { ...context, context };
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":id"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":id result", result);
-        //             node.id = result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //         // node.removeAttribute(":value");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":disabled"]) {
-        //     console.log(":disabled", node.attributes[":disabled"].value, context);
-        //     (async () => {
-        //         inc();
-        //         context = { ...context, context };
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":disabled"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":disabled result", result);
-        //             node.disabled = !!result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //         // node.removeAttribute(":value");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":target"]) {
-        //     console.log(":target", node.attributes[":target"].value, context);
-        //     (async () => {
-        //         inc();
-        //         context = { ...context, context };
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":target"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":target result", result);
-        //             node.htmlFor = result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //         // node.removeAttribute(":value");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":name"]) {
-        //     console.log(":name", node.attributes[":name"].value, context);
-        //     (async () => {
-        //         inc();
-        //         context = { ...context, context };
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":name"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":name result", result);
-        //             node.name = result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //         // node.removeAttribute(":value");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":value"]) {
-        //     console.log(":value", node.attributes[":value"].value, context);
-        //     (async () => {
-        //         inc();
-        //         context = { ...context, context };
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":value"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":value result", result);
-        //             node.value = result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-        //         // node.removeAttribute(":value");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":src"]) {
-        //     console.log(":src", node.attributes[":src"].value, context);
-        //     (async () => {
-        //         inc();
-
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":src"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             console.log(":src result", result);
-        //             node.src = result;
-        //             // if (node.parentElement.classList.contains("background")) {
-        //             //     $(node.parentElement).each(function () {
-        //             //         const imgpath = $(node.parentElement).find('img');
-        //             //         $(this).css('background-image', 'url(' + imgpath.attr('src') + ')');
-        //             //         imgpath.hide();
-        //             //     });
-        //             // }
-        //             $(".background").each(function () {
-        //                 const imgpath = $(this).find('img');
-        //                 $(this).css('background-image', 'url(' + imgpath.attr('src') + ')');
-        //                 imgpath.hide();
-        //             });
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-
-        //         // if (root.dataset.for) {
-        //         //     node.removeAttribute(":src");
-        //         // }
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":class"]) {
-        //     console.log(":class", node.attributes[":class"].value);
-        //     node._defaultClassName = node._defaultClassName || node.className;
-        //     (async () => {
-        //         inc();
-
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":class"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             node.className = `${node._defaultClassName} ${result || ""}`;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-
-        //         // node.removeAttribute(":class");
-
-        //         dec();
-        //     })();
-        // }
-        // if (node.attributes[":text"]) {
-        //     console.log(":text", node.attributes[":text"].value);
-        //     (async () => {
-        //         inc();
-
-        //         try {
-        //             const result = await new Function(
-        //                 ...Object.keys(context),
-        //                 `return (${node.attributes[":text"].value});`
-        //             )(
-        //                 ...Object.values(context)
-        //             );
-        //             node.textContent = result;
-        //         } catch (error) {
-        //             console.warn(":error", `${error}`);
-        //         }
-
-        //         // node.removeAttribute(":text");
-
-        //         dec();
-        //     })();
-        // }
     }
 }
 
@@ -984,7 +618,7 @@ function listen(name, callback) {
     return listener(document, name, callback);
 }
 
-async function startRouter() {
+async function startRouter(container) {
     const style = document.createElement("style");
 
     style.textContent = `
@@ -1023,7 +657,7 @@ async function startRouter() {
 
     const mainContainer = document.createElement("div");
 
-    document.body.append(mainContainer);
+    (container || document.body).append(mainContainer);
 
     let view = null;
 
@@ -1096,7 +730,7 @@ async function startRouter() {
         }
 
         // listener(view, "ready", async () => {
-        // initialize
+        //     // initialize
         // });
     }
 
