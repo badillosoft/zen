@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v1.7 (alpha) July 2020
+// Kuhni Labs - zen.js v1.7.1 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -963,6 +963,10 @@ async function startRouter() {
 
         .fade-out {
             animation: fade-out 600ms;
+        }
+
+        [hidden] {
+            display: none !important;
         }
     `;
 
