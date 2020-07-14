@@ -147,6 +147,7 @@ function inlineHTML(html, protocol = {}) {
                         resolve();
                     });
                     _script.src = script.src;
+                    document.head.append(_script);
                 });
                 console.warn(`zen.js done script ${script.src}`);
             }
