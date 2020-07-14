@@ -140,14 +140,15 @@ function inlineHTML(html, protocol = {}) {
                 if (window._scripts[script.src]) continue;
                 const _script = document.createElement("script");
                 window._scripts[script.src] = _script;
+                console.warn(`zen.js waiting script ${script.src}`);
                 await new Promise(resolve => {
                     _script.addEventListener("load", () => {
                         _script._loaded = true;
                         resolve();
-                    })
+                    });
                     _script.src = script.src;
                 });
-                continue;
+                console.warn(`zen.js done script ${script.src}`);
             }
         }
         for (let script of scripts) {
