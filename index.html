@@ -6,10 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zen.js Micro Library</title>
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/css/all.min.css" />
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <!-- Bootstrap Datepicker -->
+    <!-- <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"> -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker3.min.css">
+
+    <!-- JQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+    <!-- Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <!-- Bootstrap -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+        crossorigin="anonymous"></script>
+    <!-- Bootstrap Datepicker -->
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.es.min.js"></script>
+    <!-- Sweet Alert 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+
     <script src="https://cdn.jsdelivr.net/remarkable/1.7.1/remarkable.min.js"></script>
 
-    <link rel="stylesheet" href="prism.css">
-    <script src="prism.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/themes/prism.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/prism.min.js"></script>
+    <!-- <link rel="stylesheet" href="prism.css"> -->
+    <!-- <script src="prism.js"></script> -->
 
     <script src="zen.js"></script>
 
@@ -31,53 +66,27 @@
 <body>
     <h1>Zen.js - Micro Library</h1>
 
-    <div>
-        <h2>await get(url, body)</h2>
-        <div>
-            <script>
-                (parent => {
-                    async function test() {
-                        const url = "https://randomuser.me/api";
-                        const params = { results: 4 };
-                        const result = await get(url, params).catch(() => null);
-                        alert(JSON.stringify(result));
-                    };
-
-                    parent.innerHTML = fncodeMD(test);
-
-                    const button = inlineHTML("<button>test</button>");
-
-                    button.onclick = () => test();
-
-                    parent.append(button);
-                })(document.currentScript.parentElement);
-            </script>
-        </div>
+    <div class="d-flex border rounded m-3">
+        <div class="flex-grow-1 d-flex flex-column border-right" id="code"></div>
+        <div class="flex-grow-1 p-3" id="app"></div>
     </div>
-    
-    <div>
-        <h2>await post(url, body)</h2>
-        <div>
-            <script>
-                (parent => {
-                    async function test() {
-                        const url = "https://5b44b71093fb1d07b9f038b979f48bd1.m.pipedream.net";
-                        const body = { message: "hello" };
-                        const result = await post(url, body).catch(() => null);
-                        alert(JSON.stringify(result));
-                    };
 
-                    parent.innerHTML = fncodeMD(test);
+    <script>
+        startRouter(select("#app"));
 
-                    const button = inlineHTML("<button>test</button>");
+        listen("inline-html", async html => {
+            const context = await getContext();
 
-                    button.onclick = () => test();
-
-                    parent.append(button);
-                })(document.currentScript.parentElement);
-            </script>
-        </div>
-    </div>
+            console.log("html", html);
+            const block = `\`\`\`html\n${html}\n\`\`\``;
+            const md = new Remarkable();
+            const code = md.render(`# *#page=${context.page}*\n---\n> \`${context.page}.html\`\n\n${block}`);
+            select("#code").innerHTML = `
+                <pre><code class="language-markup">${html.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>
+            `;
+            select("#code").innerHTML = code;
+        });
+    </script>
 </body>
 
 </html>

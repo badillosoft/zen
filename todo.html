@@ -1,0 +1,87 @@
+<div ^class="`flex-grow-1 h-100 bg-light p-3`">
+    <h1>Todo App</h1>
+
+    <div class="input-group mb-3">
+        <input @escape="self.value = ''" @enter="addTodo()" id="todo-input" type="text" class="form-control"
+            placeholder="Write shomething" aria-label="Write shomething" aria-describedby="button-todo">
+        <div class="input-group-append">
+            <button @click="addTodo()" class="btn btn-outline-primary" type="button" id="button-todo">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    </div>
+
+    <div>
+        <div :if="!context.todos || todos.length === 0" class="alert alert-light" role="alert">
+            There are not todos here
+        </div>
+    </div>
+
+    <ul :if="context.todos && todos.length > 0" class="list-group">
+        <li :for="todos" :each="todo" class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="form-group form-check mt-3">
+                        <input type="checkbox" class="form-check-input" $checked="todo.checked" $id="todo.id"
+                            @change="checkTodo(todo, self.checked)">
+                        <label class="form-check-label" $for="todo.id" $html="todoText(todo)">Todo
+                            shomething...</label>
+                    </div>
+                </div>
+                <button @click="deleteTodo(todo)" class="btn btn-outline-danger">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<script>
+    const todoInput = selector(parent, "#todo-input");
+
+    handle("addTodo", async () => {
+        if (!todoInput.value) return;
+
+        const context = await getContext();
+
+        await setContext({
+            todos: [
+                ...(context.todos || []),
+                {
+                    id: Math.random().toString(32).slice(2),
+                    text: todoInput.value
+                }
+            ]
+        });
+
+        todoInput.value = "";
+    });
+    
+    handle("checkTodo", async (todo, checked) => {
+        console.warn(`TODO ${todo.id}`);
+
+        const context = await getContext();
+
+        await setContext({
+            todos: (context.todos || []).map(_todo => {
+                if (todo.id !== _todo.id) return _todo;
+                _todo.checked = checked;
+                return _todo;
+            })
+        });
+    });
+    
+    handle("deleteTodo", async todo => {
+        const context = await getContext();
+
+        await setContext({
+            todos: (context.todos || []).filter(_todo => {
+                return todo.id !== _todo.id;
+            })
+        });
+    });
+
+    handle("todoText", todo => {
+        return todo.checked ? `<del>${todo.text}</del>` : todo.text;
+    })
+</script>

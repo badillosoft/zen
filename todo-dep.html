@@ -1,0 +1,71 @@
+<div ^class="`flex-grow-1 h-100 bg-light p-3`">
+    <h1>Todo App</h1>
+
+    <div class="input-group mb-3">
+        <input @escape="self.value = ''" @enter="addTodo()" id="todo-input" type="text" class="form-control"
+            placeholder="Write shomething" aria-label="Write shomething" aria-describedby="button-todo">
+        <div class="input-group-append">
+            <button @click="addTodo()" class="btn btn-outline-primary" type="button" id="button-todo">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    </div>
+
+    <div>
+        <div :if="!context.todos || todos.length === 0" class="alert alert-light" role="alert">
+            There are not todos here
+        </div>
+    </div>
+
+    <ul :if="context.todos && todos.length > 0">
+        <li :for="todos" :each="todo">
+            <div>
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" $checked="todo.checked" $id="todo.id"
+                        $ref="todo.checkbox = todo.checkbox || self" @change="checkTodo(todo)">
+                    <label class="form-check-label" for="todo.id" $text="todo.text" $ref="todo.label = todo.label || self">Todo
+                        shomething...</label>
+                </div>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<script>
+    const todoInput = selector(parent, "#todo-input");
+
+    handle("addTodo", async () => {
+        const context = await getContext();
+
+        await setContext({
+            todos: [
+                ...(context.todos || []),
+                {
+                    id: Math.random().toString(32).slice(2),
+                    text: todoInput.value
+                }
+            ]
+        });
+
+        todoInput.value = "";
+    });
+    
+    handle("checkTodo", async todo => {
+        console.warn(`TODO ${todo.id}`);
+
+        const context = await getContext();
+
+        await setContext({
+            todos: (context.todos || []).map(_todo => {
+                if (todo.id !== _todo.id) return _todo.id;
+                _todo.checkbox.checked = !_todo.checkbox.checked;
+                _todo.checked = _todo.checkbox.checked;
+                if (_todo.label) {
+                    if (_todo.checked) _todo.label.innerHTML = `<del>${_todo.text}</del>`;
+                    else _todo.label.innerHTML = _todo.text;
+                }
+                return _todo;
+            })
+        });
+    });
+</script>

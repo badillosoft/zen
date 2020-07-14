@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v2.2.1 (alpha) July 2020
+// Kuhni Labs - zen.js v2.2 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -110,8 +110,6 @@ function inlineHTML(html, protocol = {}) {
             return `\n})(parent.protocol)\n${w}`;
         })
     );
-
-    dispatch("inline-html", html);
 
     temporal.innerHTML = `
         <template>
@@ -307,7 +305,6 @@ async function execNode(node, type, name, attribute, context, inc, dec) {
     if (name === "text") name = "textContent";
     if (name === "html") name = "innerHTML";
     if (name === "class") name = "className";
-    if (name === "for") name = "htmlFor";
     context = {
         ...context,
         self: node,
@@ -345,25 +342,9 @@ function procNode(node, context, inc, dec) {
             let eventName = name;
             if (name === "form") {
                 eventName = "submit";
-                node[`_@${name}/handler`] = async context => {
+                node[`_@${eventName}/handler`] = async context => {
                     context.event.preventDefault();
                     context.formData = getFormData(node);
-                }
-            } else if (name === "enter") {
-                eventName = "keydown";
-                node[`_@${name}/handler`] = async context => {
-                    if (context.event.key !== "Enter") {
-                        context.cancel();
-                        return;
-                    }
-                }
-            } else if (name === "escape") {
-                eventName = "keydown";
-                node[`_@${name}/handler`] = async context => {
-                    if (context.event.key !== "Escape") {
-                        context.cancel();
-                        return;
-                    }
                 }
             }
             if (!eventName) continue;
@@ -410,7 +391,7 @@ function procNode(node, context, inc, dec) {
                     }
                 };
 
-                if (node[`_@${name}/handler`]) await node[`_@${name}/handler`](context);
+                if (node[`_@${eventName}/handler`]) await node[`_@${eventName}/handler`](context);
 
                 if (context.isCancel) return;
 
@@ -591,33 +572,22 @@ function renderContext(root, context, inc, dec) {
 
 async function getContext() {
     window._context = {
+        ...window._context,
         ...JSON.parse(localStorage.getItem("context") || "{}"),
-        ...(window._context || {}),
     };
     return window._context;
 }
 
-function normalizeJSON(root) {
-    if (root instanceof Array) {
-        return root.map(normalizeJSON);
-    }
-    if (typeof root !== "object") return root;
-    const clone = {};
-    for (let key in root) {
-        if (root[key] instanceof HTMLElement) continue;
-        clone[key] = normalizeJSON(root[key]);
-    }
-    return clone;
-}
-
 async function setContext(context = {}) {
+    window._context = window._context || {};
+
     window._context = {
         ...JSON.parse(localStorage.getItem("context") || "{}"),
-        ...(window._context || {}),
+        ...window._context,
         ...context
     };
 
-    // localStorage.setItem("context", JSON.stringify(normalizeJSON(window._context)));
+    localStorage.setItem("context", JSON.stringify(window._context));
 
     let pic = 0;
 
@@ -755,20 +725,18 @@ async function startRouter(container) {
 
         clear(mainContainer);
 
-        const context = await getContext();
-
-        await setContext({
-            pageBack: `#page=${context.page || "home"}`,
-            page
-        });
-
         view = await loadHTML(page);
 
         view.hidden = true;
 
         mainContainer.append(view);
 
-        await setContext();
+        const context = await getContext();
+
+        await setContext({
+            pageBack: `#page=${context.page || "home"}`,
+            page
+        });
 
         const cancelCode = Math.random().toString(32).slice(2);
 
@@ -785,9 +753,6 @@ async function startRouter(container) {
 
             view.hidden = false;
         }
-
-        // await new Promise(resolve => setTimeout(resolve, 300));
-        // await setContext();
 
         // listener(view, "ready", async () => {
         //     // initialize
