@@ -135,6 +135,23 @@ function inlineHTML(html, protocol = {}) {
 
     (async () => {
         for (let script of scripts) {
+            if (script.src) {
+                window._scripts = window._scripts || {};
+                if (window._scripts[script.src]) continue;
+                const _script = document.createElement("script");
+                window._scripts[script.src].push(_script);
+                await new Promise(resolve => {
+                    _script.onload = () => {
+                        resolve();
+                    }
+                    _script.src = script.src;
+                });
+                continue;
+            }
+        }
+        for (let script of scripts) {
+            if (script.src) continue;
+
             await new Function(
                 "document",
                 "parent",
