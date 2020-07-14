@@ -641,11 +641,11 @@ async function startRouter(container) {
         }
         
         .fade-in {
-            animation: fade-in 800ms;
+            animation: fade-in 600ms;
         }
 
         .fade-out {
-            animation: fade-out 800ms;
+            animation: fade-out 600ms;
         }
 
         [hidden] {
@@ -691,7 +691,7 @@ async function startRouter(container) {
 
             view.classList.add("fade-out");
 
-            await new Promise(resolve => setTimeout(resolve, 600));
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             view.hidden = true;
 
@@ -724,7 +724,7 @@ async function startRouter(container) {
         if (resultCode !== cancelCode) {
             view.classList.add("fade-in");
 
-            await new Promise(resolve => setTimeout(resolve, 600));
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             view.hidden = false;
         }
