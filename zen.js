@@ -139,7 +139,7 @@ function inlineHTML(html, protocol = {}) {
                 window._scripts = window._scripts || {};
                 if (window._scripts[script.src]) continue;
                 const _script = document.createElement("script");
-                window._scripts[script.src].push(_script);
+                window._scripts[script.src] = _script;
                 await new Promise(resolve => {
                     _script.onload = () => {
                         resolve();
