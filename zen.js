@@ -453,11 +453,11 @@ function renderContext(root, context, inc, dec) {
 
                 try {
                     result = await new Function(
-                        context,
+                        "context",
                         ...Object.keys(context),
                         `return (${node.attributes[":if"].value}); `
                     )(
-                        "context",
+                        context,
                         ...Object.values(context)
                     );
                 } catch (error) {
@@ -499,11 +499,11 @@ function renderContext(root, context, inc, dec) {
 
                 try {
                     items = await new Function(
-                        context,
+                        "context",
                         ...Object.keys(context),
                         `return (${node.attributes[":for"].value}); `
                     )(
-                        "context",
+                        context,
                         ...Object.values(context)
                     );
                 } catch (error) {
