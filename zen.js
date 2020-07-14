@@ -284,6 +284,7 @@ async function execNode(node, type, name, attribute, context, inc, dec) {
     inc();
     if (name === "text") name = "textContent";
     if (name === "html") name = "innerHTML";
+    if (name === "class") name = "className";
     context = {
         ...context,
         self: node,
