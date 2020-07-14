@@ -101,6 +101,8 @@ async function api(url, protocol = {}, baseUrl = "api") {
 const cache = {};
 
 function inlineHTML(html, protocol = {}) {
+    dispatch("inline-html", html);
+    
     const temporal = document.createElement("div");
 
     html = (
@@ -110,8 +112,6 @@ function inlineHTML(html, protocol = {}) {
             return `\n})(parent.protocol)\n${w}`;
         })
     );
-
-    dispatch("inline-html", html);
 
     temporal.innerHTML = `
         <template>
