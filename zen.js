@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v2.0 (alpha) July 2020
+// Kuhni Labs - zen.js v2.1 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -453,9 +453,11 @@ function renderContext(root, context, inc, dec) {
 
                 try {
                     result = await new Function(
+                        context,
                         ...Object.keys(context),
                         `return (${node.attributes[":if"].value}); `
                     )(
+                        "context",
                         ...Object.values(context)
                     );
                 } catch (error) {
@@ -497,9 +499,11 @@ function renderContext(root, context, inc, dec) {
 
                 try {
                     items = await new Function(
+                        context,
                         ...Object.keys(context),
                         `return (${node.attributes[":for"].value}); `
                     )(
+                        "context",
                         ...Object.values(context)
                     );
                 } catch (error) {
