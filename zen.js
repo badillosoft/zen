@@ -141,9 +141,10 @@ function inlineHTML(html, protocol = {}) {
                 const _script = document.createElement("script");
                 window._scripts[script.src] = _script;
                 await new Promise(resolve => {
-                    _script.onload = () => {
+                    _script.addEventListener("load", () => {
+                        _script._loaded = true;
                         resolve();
-                    }
+                    })
                     _script.src = script.src;
                 });
                 continue;
