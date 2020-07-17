@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v2.2.1 (alpha) July 2020
+// Kuhni Labs - zen.js v2.2.2 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -563,9 +563,13 @@ function renderContext(root, context, inc, dec) {
 
                     clone.hidden = false;
 
-                    lastElement.insertAdjacentElement("afterend", clone);
-
-                    lastElement = clone;
+                    if (index === 0) {
+                        node.insertAdjacentElement("beforebegin", clone);
+                        lastElement = node;
+                    } else {
+                        lastElement.insertAdjacentElement("afterend", clone);
+                        lastElement = clone;
+                    }
 
                     renderContext(
                         clone,
@@ -610,14 +614,14 @@ function normalizeJSON(root) {
     return clone;
 }
 
-async function setContext(context = {}) {
+async function setContext(context = {}, temporal = false) {
     window._context = {
         ...JSON.parse(localStorage.getItem("context") || "{}"),
         ...(window._context || {}),
         ...context
     };
 
-    // localStorage.setItem("context", JSON.stringify(normalizeJSON(window._context)));
+    if (!temporal) localStorage.setItem("context", JSON.stringify(normalizeJSON(window._context)));
 
     let pic = 0;
 
@@ -644,6 +648,16 @@ async function setContext(context = {}) {
 
     console.warn("pic", pic);
 }
+
+// async function saveContext(context = {}) {
+//     window._context = {
+//         ...JSON.parse(localStorage.getItem("context") || "{}"),
+//         ...(window._context || {}),
+//         ...context
+//     };
+
+//     localStorage.setItem("context", JSON.stringify(normalizeJSON(window._context)));
+// }
 
 function handle(key, callback) {
     window._context = window._context || {};
