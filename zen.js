@@ -8,8 +8,7 @@ async function get(url, params = {}) {
 
     if (!response.ok) {
         const error = await response.text();
-        console.log("get error", error);
-        throw new Error(error);
+        return { error };
     }
 
     return await response.text();
@@ -57,7 +56,7 @@ async function post(url, body = {}) {
 
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(error);
+        return { error };
     }
 
     return await response.json();
