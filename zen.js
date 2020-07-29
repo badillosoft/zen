@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v2.2.4 (alpha) July 2020
+// Kuhni Labs - zen.js v2.2.5 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
