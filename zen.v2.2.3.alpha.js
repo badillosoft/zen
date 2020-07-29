@@ -1,4 +1,4 @@
-// Kuhni Labs - zen.js v2.2.4 (alpha) July 2020
+// Kuhni Labs - zen.js v2.2.3 (alpha) July 2020
 // Main Developer: Alan Badillo Salas @dragonnomada
 
 async function get(url, params = {}) {
@@ -816,10 +816,4 @@ async function startRouter(container) {
     // await new Promise(resolve => setTimeout(resolve, 500));
 
     await loadPage();
-}
-
-async function bind(self) {
-    await setContext({
-        [self.name]: self.value
-    });
 }
